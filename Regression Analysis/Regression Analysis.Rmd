@@ -1,0 +1,236 @@
+---
+title: "Homework 1 for Marketing Aanlytics"
+author: "Lunjing Yuan"
+date: "Due on Monday, January 18, 2020"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+  word_document: default
+subtitle: Regression Analysis
+---
+
+Feel free to conduct your analysis using this R notebook file. For help with R and R graphics, please check the class notes and the additional notes posted on the class drive.
+
+Please Knit to pdf file, then submit it on Camino by 5:30pm on Monday, Jan. 18. 
+Please name the file in the format DongXiaojing_session1_hw1.pdf before submission.
+
+# Part I: Basics of Regression
+
+
+Follow the steps below: 
+
+1. Put the data and this file in a folder, and set it as your working folder through `setwd()`
+
+```{r}
+#setwd(" ")
+setwd("~/Desktop/winter2021/Marketing Analystics/Lecture 2 Regression")
+```
+
+2. Read in the data file `Coffee_inClass.csv`, Run a regression analysis and answer the question "how price influence sales"? You can try different model specificatoin, but only leave the final version of your code here. Make sure you include some dummy variables, and interactions between some dummy with other variables.
+```{r, message=FALSE}
+#install.packages("ggplot2")
+library(ggplot2)
+coffee.data<-read.csv("Coffee_inClass.csv")
+
+names(coffee.data)
+
+#Plot the data
+a = cbind(coffee.data$Sales1,coffee.data$Price1) 
+dim(a)
+
+matplot(a,type="l",col=c("blue","red"))
+legend('topleft',c("Sales","Price"),lty=1:2,col=c("blue","red"),cex=0.8)
+
+#We found that the variable Sales1 is in thousands, and the variable Price1 is in units. In order to make them into a similar scale, we rescale the variables and replot them together. 
+salesk=coffee.data$Sales1/1000
+matplot(cbind(salesk,coffee.data$Price1),type="l",col=c("blue","red"))
+legend('topleft',c("Sales","Price"),lty=1:2,col=c("blue","red"),cex=0.8)
+```
+
+
+```{r}
+
+## Final version of regression model 
+
+dum_dayofweek <- factor(coffee.data$dayofweek)
+salesk=coffee.data$Sales1/1000
+model <- lm(salesk~Price1+feat1+dum_dayofweek+feat1*dum_dayofweek,data=coffee.data)
+summary(model)
+```
+######
+##  As we can see from the result, for every one dollar change of price1 the expected number of sales increases by 0.804979 on average holding all other variables constant. In real world, it is hard to measure sales based on price. Therefore, we need to make assumptions:
+Null hypothesis: price has no influence on sales
+
+Alternative hypothesis: price has influence on sales
+
+##  From the result above, Price1(0.018) <  significance level(0.05), which means that we reject the null hypothesis. Hence, price has influence on sales.
+
+2. List all the control variables (including dummy variables, and interactions) included in the model. Explain for each control variable, why it needs to be included?
+######
+##  Control variable: Price1 means the price of coffee. As we can see from the dataset, the price is various on different days. That is to say, promotions, membership, discounts and son on may affect the price. Price1 is our interest of variable. feat1 is the featured ads. According to our dataset, cafe shop use feat1 on different days. This specific advertising material could help increase sales.
+
+
+##  Dummy variable: dayofweek is a categorical variable with fixed set of values, from Monday to Sunday. Sales may be different during weekdays and at weekends.
+
+
+##  Interaction variable: feat1 * dayofweek, indicates that the consequences of feature on sales may be different if the feature is on different days of the week. 
+
+
+3. Plot the residuals, and comment on the residules, are they ideal? Any concerns?
+```{r}
+#Plotting histogram for residuals
+hist(model$residuals,20)
+
+```
+
+######
+##  This model doesn't work or needs more data because the plot is  clearly not a symmetrical pattern. 
+
+4. How do you interpret each of the parameter estimates? Make sure your interpretation of each estimates include the values of the estimates, the standard error, the t-statistics and the p-value. Be careful with the dummy variables and the interaction variables.
+
+```{r}
+#The variable Sales1 is in thousands, and the variable Price1 is in units. In order to see them together in the same plot, we need to rescale the variables, to make them into a similar scale, then replot them together.
+
+salesk=coffee.data$Sales1/1000 
+
+modelx <- lm(salesk~Price1+feat1+dum_dayofweek+feat1*dum_dayofweek,data=coffee.data)
+summary(modelx)
+
+```
+######
+## Price1: the estimate is 0.804979, which means for one dollar change of Price1 the expected number of sales increases by 0.804979 on average holding all other variables constant. Standard error is 0.336933, which indicates the data is certain about this parameter as SE value is very small.The estimate is considered positive because t-statistics(2.389) > 2.0. Beisdes, p-value(0.01880) is smaller than significance level 0.05 so price1 is statistically significant.
+
+## feat1:the estimate 0.077860 means for one unit change of feat1 the expected number of sales increases by 0.077860 on average holding all other variables constant. Standard error(0.02470) shows the data is certain about this this parameter. The estimate is considered positive because t-statistics(3.152) > 2.0. P-value(0.00215) is smaller than significance level 0.05 so feat1 is statistically significant.
+
+## Dummy variables dum_dayofweek2 to dum_dayofweek7. All estimates have positive relationship with sales. T-values of all dummy variables are bewteen −2.0 to 2.0 , hence, estimates are considered statistically zero. Standard error values show that the data is unceratin about this parameter.Lastly, all the p values are greater than significance level hence, they are statistically insignificant. Besides, we remove dum_dayofweek1 (Monday) dummy variable and use dum_dayofweek starts from Tuesday. Take Thursday sales as example, we know that estimated sales on Thursday are 668.164 compared to estimated sales on Monday holding all other variables constant.
+
+## Interaction variables feat1 and dum_dayofweek2 - dum_dayofweek7. Estimates have negative relationship with sales. We copuld say for one unit change of feat1*dum_dayofweek2 (Tuesday) the expected number of sales decreases by -7.708 on average holding all other variables constant. T-values of feat1:dum_dayofweek3 is t−stat < −2.0 indicating the estimate considered to be negative and p-value 0.00272 < 0.05. Therefore, feat1:dum_dayofweek3 is statistically significant. All other t-values of interaction variables are greater than -2.0 means that the estimate considered to be statistically zero. Standard error values are greater than estimated coefficient means data is very uncertain about this parameter.
+
+
+5. In utilizing the dummy variables indicating the day of week, the above model has left one of the day-of-week dummy variable out. Now change the specification by leaving out a different day-of-week dummy variable (for example instead of leaving out the Monday dummy, now include the Monday dummy but leave out the Tuesday (or any other day) dummy). Please explain the changes in the estimates, standard errors of all the estimate. 
+
+```{r}
+## Removing Tuesday dum_dayofweek2
+remove = relevel(dum_dayofweek,ref = "2")
+#Run regression with releveled variable
+modely <- lm(salesk~Price1+feat1+dum_dayofweek+feat1*remove, data = coffee.data)
+summary(modely)
+```
+######
+## Based on our regression model, we find changes in estimates of control variable feat1, interaction variables feat1:remove1,feat1:remove2,feat1:remove4,feat1:remove5,feat1:remove6,feat1:remove7. 
+
+## feat1:the estimate 0.0701521 means for every one unit change of feat1 the expected number of sales increases by 0.0701521 on average holding all other variables constant. Standard error(0.0373381) shows the data is certain about this this parameter. The estimate is considered to be statistically zero because -2.0 < t-statistics(1.879) < 2.0. P-value(0.0632) is greater than significance level 0.05 so feat1 is not statistically significant.
+
+## As we can see from summary, there is a positive relationship with sales for interaction variables. For every one unit change of feat1:remove1 (Sales on Monday) the expected number of sales increases by 7.7082 on average holding all other variables constant.
+
+## T-values of interaction variables feat1:remove1, feat1:remove4, feat1:remove5, feat1:remove6, feat1:remove7 are between -2.0 and 2.0 indicating the estimate considered to be statistically zero.T-values of interaction variables feat1:remove3 is smaller than -2.0 indicating the estimate considered to be negative. Standard error values are less than estimated coefficient indicating data is very certain about this parameter.
+
+
+
+
+
+# Part II Endogeneity and 2SLS
+
+1. Load the data file `health_inclass.csv`, conduct simple regression without correcting for endogeneity, and try to answer the question whether having health insurance leads to higher or lower medical expenses. In this exercise, add more variables from the data, you can create dummy variables, add meaningful interaction variables. Try at least three models (different specifications from the example in class), and find the best one among the three, interpret the model results. 
+```{r}
+health.data<-read.csv("health_inclass.csv")
+attach(health.data)
+names(health.data)
+```
+
+Present all the three model results, and answer the following questions:
+
+
+```{r}
+Y1 <- log(medexpense)
+logincome = log(income)
+
+lm1<- lm(Y1~healthinsu+illnesses)
+summary(lm1)
+
+lm2<- lm(Y1~healthinsu+illnesses+age)
+summary(lm2)
+
+lm3<- lm(Y1~healthinsu+illnesses+age+log(income))
+summary(lm3)
+
+```
+
+(1) Based on what metrics did you choose the "best" model?
+
+######
+
+##  R Square. A higher R Square value indicates the model fits the data better.
+##  F-statistics evaluates whether the model as a whole is actually necessary.
+
+(2) Do you think the endogeneity of the $HealthIns$ variable still exists? Why or why not?
+
+######
+##  Endogeneity still exists. The problem here is that people’s decision on whether to have insurance is not random. It is highly possible that people with health insurance would choose more expensive treatments. Therefore, without running the statistical model, we suspect corr(error term, HealthIns) != 0. Hence, HealthIns is endogenous.
+
+
+2. Suppose the $HealthIns$ is endogenous, even with your "best" model, use `SSIRatio` variable as your instrument, and conduct the following exercises
+(1) Use `ivreg()` conduct the 2SLS estimates for your "best" model, while correcting for endogeneity of the $HealthIns$ variable.
+
+## I ran 3 models here: Simple OLS, 2SLS using ivreg(), 2SLS using two lm(). The last one, Model 3 using ivreg().
+
+```{r}
+health.data = read.csv("health_inclass.csv", header = TRUE) 
+attach(health.data)
+Y1 <- log(medexpense)
+Y2 <- healthinsu
+X1 <- cbind(illnesses, age, logincome)
+X2 <- cbind(ssiratio)
+
+#model1
+model1 <- lm(Y1 ~ Y2 + X1)
+summary(model1)
+```
+
+```{r}
+#model2
+# 2SLS estimation (details)
+olsreg1 <- lm (Y2 ~ X1 + X2) 
+summary(olsreg1)
+
+Y2hat <- fitted(olsreg1)
+model2 <- lm(Y1 ~ Y2hat + X1) 
+summary(model2)
+```
+
+```{r}
+#model3
+library(AER)
+# 2SLS estimation
+model3 <- ivreg(Y1 ~ Y2 + X1 | X1 + X2) 
+summary(model3)
+```
+
+
+
+(2) Compare the results from this model with those from the simple OLS approach, in terms of model fit, and your answers to the question "whether having health insurance leads to higher or lower medical expnses."
+
+```{r}
+#Comparison of the Parameter Estimates:
+ests=cbind(model1$coefficients,model3$coefficients,model2$coefficients) 
+colnames(ests) = c('OLS', '2SLS-ivreg', '2SLS-2regressions')
+ests
+```
+######
+##  By comparing the the Parameter Estimates in different models, we noticed the Y2 (HealthIns) estimates have a big difference in those models. Since we corrected the endogeneity, we won't suggest people to skip insurance if they want to save medical cost.
+
+
+
+(3) Compare the results in both estimates and the standard errors. The estimates for the endogeneous variables are quite different whether endogeneity is controlled or not. 
+```{r}
+#Comparison of the Standard Errors:
+stderrs <- cbind(summary(model1)$coefficients[,2], 
+                 summary(model3)$coefficients[,2], 
+                 summary(model2)$coefficients[,2])
+colnames(stderrs) = c('OLS', '2SLS-ivreg', '2SLS-2regressions') 
+stderrs
+```
+
+##  Given that these are predicted values, the uncertainty in the estimates from the first step regression will lead to uncertainty in these predicted values. That is to say, the standard error for the endogenous variable in the 2SLS-2regressions column is wrong. By comparing the first and second columns, we found that although the standard error for the endogenous variable are very different (0.0260124 in the first column (OLS), vs. 0.198386 in the second column (ivreg)). When we correct for endogeneity, it ensures the parameter estimates to be unbiased and correct, but it introduces more uncertainty into the model estimates. 
+
